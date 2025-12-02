@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enregistreur vocal</title>
+</head>
+<body style="text-align:center; font-family:sans-serif; padding:20px;">
+
+  <h3>🎙️ Enregistreur vocal</h3>
+
+  <button id="recordButton" style="padding:10px 20px; border-radius:8px; background:#4CAF50; color:white; border:none; cursor:pointer;">
+    Démarrer l'enregistrement
+  </button>
+
+  <button id="stopButton" style="padding:10px 20px; border-radius:8px; background:#f44336; color:white; border:none; cursor:pointer; display:none;">
+    Arrêter
+  </button>
+
+  <p id="status" style="margin-top:10px;">Clique sur “Démarrer l’enregistrement” pour commencer.</p>
+
+  <audio id="audioPlayback" controls style="margin-top:15px; display:none;"></audio>
+  <a id="downloadLink" style="display:none; margin-top:10px; color:#0066cc; text-decoration:underline;"></a>
+
+<script>
+let mediaRecorder;
+let audioChunks = [];
+const recordButton = document.getElementById("recordButton");
+const stopButton = document.getElementById("stopButton");
+const statusText = document.getElementById("status");
+const audioPlayback = document.getElementById("audioPlayback");
+const downloadLink = document.getElementById("downloadLink");
+
+recordButton.addEventListener("click", async () => {
+  audioChunks = [];
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.start();
+    statusText.textContent = "🔴 Enregistrement en cours...";
+    recordButton.style.display = "none";
+    stopButton.style.display = "inline-block";
+
+    mediaRecorder.addEventListener("dataavailable", event => {
+      audioChunks.push(event.data);
+    });
+
+    mediaRecorder.addEventListener("stop", () => {
+      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      audioPlayback.src = audioUrl;
+      audioPlayback.style.display = "block";
+
+      downloadLink.href = audioUrl;
+      downloadLink.download =
+        "note_vocale_" +
+        new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-") +
+        ".webm";
+
+      downloadLink.textContent = "📥 Télécharger la note vocale";
+      downloadLink.style.display = "block";
+
+      statusText.textContent = "✅ Enregistrement terminé.";
+      recordButton.style.display = "inline-block";
+      stopButton.style.display = "none";
+    });
+  } catch (err) {
+    console.error(err);
+    statusText.textContent = "⚠️ L’accès au micro a été refusé ou n’est pas disponible.";
+  }
+});
+
+stopButton.addEventListener("click", () => {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+});
+</script>
+
+</body>
+</html>
