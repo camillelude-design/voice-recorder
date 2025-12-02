@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enregistreur Vocal</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
+      margin: 0;
+      background: #f5f5f5;
+    }
+    h3 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .buttons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 12px 25px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    #recordButton { background-color: #4CAF50; color: white; }
+    #recordButton:hover { background-color: #45a049; }
+    #stopButton { background-color: #f44336; color: white; }
+    #stopButton:hover { background-color: #da190b; }
+    #status {
+      margin-bottom: 15px;
+      color: #555;
+      font-size: 15px;
+    }
+    audio {
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+    }
+    a#downloadLink {
+      color: #0066cc;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+    @media (max-width: 480px) {
+      button { padding: 10px 18px; font-size: 14px; }
+      audio { max-width: 300px; }
+    }
+  </style>
+</head>
+<body>
+
+  <h3>🎙️ Enregistreur Vocal</h3>
+
+  <div class="buttons">
+    <button id="recordButton">Démarrer l'enregistrement</button>
+    <button id="stopButton">Arrêter</button>
+  </div>
+
+  <p id="status">Clique sur “Démarrer l’enregistrement” pour commencer.</p>
+
+  <audio id="audioPlayback" controls style="display:none;"></audio>
+  <a id="downloadLink" style="display:none;"></a>
+
+<script>
+let mediaRecorder;
+let audioChunks = [];
+const recordButton = document.getElementById("recordButton");
+const stopButton = document.getElementById("stopButton");
+const statusText = document.getElementById("status");
+const audioPlayback = document.getElementById("audioPlayback");
+const downloadLink = document.getElementById("downloadLink");
+
+recordButton.addEventListener("click", async () => {
+  audioChunks = [];
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.start();
+    statusText.textContent = "🔴 Enregistrement en cours...";
+    recordButton.style.display = "none";
+    stopButton.style.display = "inline-block";
+
+    mediaRecorder.addEventListener("dataavailable", event => {
+      audioChunks.push(event.data);
+    });
+
+    mediaRecorder.addEventListener("stop", () => {
+      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      audioPlayback.src = audioUrl;
+      audioPlayback.style.display = "block";
+
+      downloadLink.href = audioUrl;
+      downloadLink.download = "note_vocale_" + new Date().toISOString().slice(0,19).replace(/[:T]/g,"-") + ".webm";
+      downloadLink.textContent = "📥 Télécharger la note vocale";
+      downloadLink.style.display = "inline-block";
+
+      statusText.textContent = "✅ Enregistrement terminé.";
+      recordButton.style.display = "inline-block";
+      stopButton.style.display = "none";
+    });
+  } catch (err) {
+    console.error(err);
+    statusText.textContent = "⚠️ L’accès au micro a été refusé ou n’est pas disponible.";
+  }
+});
+
+stopButton.addEventListener("click", () => {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+});
+</script>
+
+</body>
+</html>
